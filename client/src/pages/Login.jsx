@@ -3,7 +3,11 @@ import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import Textbox from "../components/Textbox";
 import Button from "../components/Button";
-import { useSelector } from "react-redux";
+import Loading from "../components/Loader"
+import { useDispatch, useSelector } from "react-redux";
+import { useLoginMutation } from "../redux/slices/api/authApiSlice";
+import { toast } from "sonner";
+import { setCredentials } from "../redux/slices/authSlice";
 
 const Login = () => {
   const { user } = useSelector((state) => state.auth);
@@ -15,9 +19,20 @@ const Login = () => {
   } = useForm();
 
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const [login, { isLoading }] = useLoginMutation();
 
   const submitHandler = async (data) => {
-    console.log("submit");
+    try {
+      const result = await login(data).unwrap();
+
+      dispatch(setCredentials(result));
+      navigate("/");
+    } catch (error) {
+      console.log(error);
+      toast.error(error?.data?.message || error.message);
+    }
   };
   console.log(user);
 
@@ -31,14 +46,14 @@ const Login = () => {
         {/* {Left Side} */}
         <div className="h-full w-full lg:w-2/3 flex flex-col items-center justify-center">
           <div className="w-full md:max-w-lg 2xl:max-w-3xl flex flex-col items-center justify-center gap-5 md:gap-y-10 2xl:mt-20">
-            <span className="flex gap-1 py-1 px-3 border-2 rounded-full text-sm md:text-base border-gray-300 text-gray-600">
+            <span className="flex gap-1 py-1 px-3 border-2 rounded-full text-sm md:text-base border-gray-400 text-gray-600 shadow-lg">
               <b> Manage all your task in one place!</b>
             </span>
             <p className="flex flex-col gap-0 md:gap-4 text-4xl md:text-6xl 2xl:text-7xl font-black text-center text-blue-700">
-              <span className="bg-gradient-to-r from-sky-400  via-blue-600 to-teal-700 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-sky-400  via-blue-600 to-teal-900 bg-clip-text text-transparent text-shadow-lg">
                 JustDo
               </span>
-              <span>Project Manager</span>
+              <span className="text-shadow-lg">Project Manager</span>
             </p>
             <div className="cell">
               <div className="circle rotate-in-up-left"></div>
@@ -47,7 +62,7 @@ const Login = () => {
         </div>
 
         {/* {Right Side} */}
-        <div className="w-full md:w-[520px] p-6 flex flex-col justify-center items-center bg-white rounded-xl shadow-lg right-side">
+        <div className="w-full md:w-[520px] p-6 flex flex-col justify-center items-center bg-white rounded-xl shadow-lg shadow-gray-600 right-side">
           <form
             className="w-full flex flex-col gap-y-8"
             onSubmit={handleSubmit(submitHandler)}
@@ -88,11 +103,15 @@ const Login = () => {
                 Forget Password?
               </span>
 
-              <Button
-                type="submit"
-                label="Submit"
-                className="w-full h-10 bg-blue-700 text-white"
-              />
+              {isLoading ? (
+                <Loading />
+              ) : (
+                <Button
+                  type="submit"
+                  label="Submit"
+                  className="w-full h-10 bg-blue-700 text-white"
+                />
+              )}
             </div>
           </form>
         </div>

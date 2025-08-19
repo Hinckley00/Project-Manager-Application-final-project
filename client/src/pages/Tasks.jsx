@@ -1,17 +1,18 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { FaList } from "react-icons/fa";
+import { IoMdAdd } from "react-icons/io";
 import { MdGridView } from "react-icons/md";
 import { useParams } from "react-router-dom";
-import Loading from "../components/Loader.jsx";
-import Title from "../components/Title.jsx";
-import Button from "../components/Button.jsx";
-import { IoMdAdd } from "react-icons/io";
-import Tabs from "../components/Tabs.jsx";
-import TaskTitle from "../components/TaskTitle.jsx";
-import BoardView from "../components/BoardView.jsx";
 import { tasks } from "../assets/data.js";
-import Table from "../components/task/Table.jsx";
+import BoardView from "../components/BoardView.jsx";
+import Button from "../components/Button.jsx";
+import Loading from "../components/Loader";
+import Tabs from "../components/Tabs.jsx";
 import AddTask from "../components/task/AddTask.jsx";
+import Table from "../components/task/Table.jsx";
+import TaskTitle from "../components/TaskTitle.jsx";
+import Title from "../components/Title.jsx";
+import { useGetAllTaskQuery } from "../redux/slices/api/taskApiSlice.js";
 
 const TABS = [
   { title: "Board View", icon: <MdGridView /> },
@@ -29,11 +30,16 @@ const Tasks = () => {
 
   const [selected, setSelected] = useState(0);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
 
   const status = params?.status || "";
 
-  return loading ? (
+  const { data, isLoading } = useGetAllTaskQuery({
+    strQuery: status,
+    isTrashed: "",
+    search: "",
+  });
+
+  return isLoading ? (
     <div className="py-10">
       <Loading />
     </div>
@@ -65,10 +71,10 @@ const Tasks = () => {
         )}
 
         {selected !== 1 ? (
-          <BoardView tasks={tasks} />
+          <BoardView tasks={data?.tasks} />
         ) : (
           <div className="w-full">
-            <Table tasks={tasks} />
+            <Table tasks={data?.tasks} />
           </div>
         )}
       </Tabs>

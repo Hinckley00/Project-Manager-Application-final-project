@@ -17,10 +17,10 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { chartData } from "../assets/data";
+// import { chartData } from "../assets/data";
 // import { data } from "react-router-dom";
 
-const Chart = () => {
+const Chart = ({data}) => {
   return (
     // <ResponsiveContainer width={"100%"} height={300}>
     //   <BarChart width={150} height={40} data={chartData}>
@@ -37,7 +37,7 @@ const Chart = () => {
       <LineChart
         width={150}
         height={40}
-        data={chartData}
+        data={data}
         margin={{
           top: 5,
           right: 30,
