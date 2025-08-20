@@ -52,15 +52,15 @@ const TaskCard = ({ task }) => {
           <div className="flex items-center gap-3">
             <div className="flex gap-1 items-center text-sm text-gray-600">
               <BiMessageAltDetail />
-              <span>{task?.activities?.length}</span>
+              <span>{task?.activities?.length || 0}</span>
             </div>
             <div className="flex gap-1 items-center text-sm text-gray-600">
               <MdAttachFile />
-              <span>{task?.activities?.length}</span>
+              <span>{task?.assets?.length || 0}</span>
             </div>
             <div className="flex gap-1 items-center text-sm text-gray-600">
               <FaList />
-              <span>{task?.activities?.length}</span>
+              <span>{task?.subTasks?.length || 0}</span>
             </div>
           </div>
           <div className="flex flex-row-reverse pb-1.5">
@@ -94,6 +94,65 @@ const TaskCard = ({ task }) => {
               <span className="text-gray-500">No Sub Task</span>
             </div>
           </>
+        )}
+        
+        {/* {Assets} */}
+        {task?.assets?.length > 0 && (
+          <div className="py-4 border-t border-gray-200">
+            <h5 className="text-base text-black mb-2">Attachments</h5>
+            <div className="space-y-2">
+              {task.assets.map((asset, index) => (
+                <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                  <MdAttachFile className="text-gray-600" />
+                  <span className="text-sm text-gray-700">{asset.name}</span>
+                  <button
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = asset.link;
+                      link.download = asset.name;
+                      link.click();
+                    }}
+                    className="ml-auto text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                  >
+                    Download
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* {Image Assets} */}
+        {task?.assets?.length > 0 && (
+          <div className="py-4 border-t border-gray-200">
+            <h5 className="text-base text-black mb-2">Images</h5>
+            <div className="grid grid-cols-2 gap-2">
+              {task.assets
+                .filter(asset => asset.link && asset.link.startsWith('data:image'))
+                .map((asset, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={asset.link}
+                      alt={asset.name}
+                      className="w-full h-24 object-cover rounded border border-gray-200"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded flex items-center justify-center">
+                      <button
+                        onClick={() => {
+                          const link = document.createElement('a');
+                          link.href = asset.link;
+                          link.download = asset.name;
+                          link.click();
+                        }}
+                        className="opacity-0 group-hover:opacity-100 bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700 transition-all duration-200"
+                      >
+                        Download
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
         )}
         <div className="w-full pb-2">
           <button

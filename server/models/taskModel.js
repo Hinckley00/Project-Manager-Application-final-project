@@ -6,7 +6,7 @@ const taskSchema = new Schema(
     date: { type: Date, default: new Date() },
     priority: {
       type: String,
-      default: "medium",
+      default: "normal",
       enum: ["high", "medium", "normal", "low"],
     },
     stage: {
@@ -41,7 +41,14 @@ const taskSchema = new Schema(
         tag: String,
       },
     ],
-    assets: [String],
+    assets: [
+      {
+        name: String, // filename for alt text
+        link: String  // base64 data for src attribute
+      }
+    ],
+    description: String,
+    links: [String],
     team: [{ type: Schema.Types.ObjectId, ref: "User" }],
     isTrashed: { type: Boolean, default: false },
   },

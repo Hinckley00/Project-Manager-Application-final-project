@@ -1,39 +1,54 @@
-import React, { useState } from "react";
-import ModalWrapper from "../ModalWrapper";
 import { Dialog } from "@headlessui/react";
-import Textbox from "../Textbox.jsx";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import UserList from "./UserList.jsx";
-import SelectList from "../SelectList.jsx";
 import { BiImages } from "react-icons/bi";
-import Button from "../Button.jsx";
-import {
-  getStorage,
-  ref,
-  getDownloadURL,
-  uploadBytesResumable,
-} from "firebase/storage";
-import { app } from "../../utils/firebase.js";
+import { toast } from "sonner";
+
 import {
   useCreateTaskMutation,
   useUpdateTaskMutation,
-} from "../../redux/slices/api/taskApiSlice.js";
-import { toast } from "sonner";
+} from "../../redux/slices/api/taskApiSlice";
+import { dateFormatter } from "../../utils";
+import Button from "../Button";
+import Loading from "../Loader";
+import ModalWrapper from "../ModalWrapper";
+import SelectList from "../SelectList";
+import Textbox from "../Textbox";
+import UserList from "./UserList";
 
 const LISTS = ["TODO", "IN PROGRESS", "COMPLETED"];
 const PRIORITY = ["HIGH", "MEDIUM", "NORMAL", "LOW"];
 
-const uploadedFileURLs = [];
+// Utility function to check if file is an image
+const isImageFile = (file) => {
+  return file.type.startsWith("image/");
+};
+
+// Utility function to validate file size (5MB limit)
+const validateFileSize = (file) => {
+  const maxSize = 5 * 1024 * 1024; // 5MB
+  return file.size <= maxSize;
+};
 
 const AddTask = ({ open, setOpen, task }) => {
+  const defaultValues = {
+    title: task?.title || "",
+    date: dateFormatter(task?.date || new Date()),
+    team: [],
+    stage: "",
+    priority: "",
+    assets: [],
+    description: "",
+    links: "",
+  };
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm();
+  } = useForm({ defaultValues });
 
-  const [team, setTeam] = useState(task?.team || []);
   const [stage, setStage] = useState(task?.stage?.toUpperCase() || LISTS[0]);
+  const [team, setTeam] = useState(task?.team || []);
   const [priority, setPriority] = useState(
     task?.priority?.toUpperCase() || PRIORITY[2]
   );
@@ -44,28 +59,46 @@ const AddTask = ({ open, setOpen, task }) => {
   const [updateTask, { isLoading: isUpdating }] = useUpdateTaskMutation();
   const URLS = task?.assets ? [...task.assets] : [];
 
-  const submitHandler = async (data) => {
-    for (const file of assets) {
-      setUploading(true);
-      try {
-        await uploadFile(file);
-      } catch (error) {
-        console.error("Error uploading file:", error.message);
-        return;
-      } finally {
-        setUploading(false);
-      }
-    }
+  const convertFileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        const base64String = reader.result;
+        resolve({
+          name: file.name,
+          link: base64String,
+        });
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
 
+  const handleOnSubmit = async (data) => {
+    setUploading(true);
     try {
+      // Convert files to base64 with name and link structure
+      const convertedAssets = [];
+      for (const file of assets) {
+        try {
+          const base64Asset = await convertFileToBase64(file);
+          convertedAssets.push(base64Asset);
+        } catch (error) {
+          console.error("Error converting file:", error.message);
+          toast.error(`Failed to process file: ${file.name}`);
+          return;
+        }
+      }
+
       const newData = {
         ...data,
-        assets: [...URLS, ...uploadedFileURLs],
+        assets: [...URLS, ...convertedAssets],
         team,
         stage,
         priority,
       };
 
+      console.log("Task data being sent to server:", newData);
       const res = task?._id
         ? await updateTask({ ...newData, _id: task._id }).unwrap()
         : await createTask(newData).unwrap();
@@ -75,51 +108,47 @@ const AddTask = ({ open, setOpen, task }) => {
       setTimeout(() => {
         setOpen(false);
       }, 500);
-    } catch (error) {
+    } catch (err) {
       console.log(err);
       toast.error(err?.data?.message || err.error);
+    } finally {
+      setUploading(false);
     }
   };
 
-  const handleSelect = () => {
-    setAssets(e.target.files);
-  };
+  const handleSelect = (e) => {
+    const selectedFiles = Array.from(e.target.files);
 
-  const uploadFile = async (file) => {
-    const storage = getStorage(app);
+    // Validate files
+    const validFiles = [];
+    const errors = [];
 
-    const name = new Date().getTime() + file.name;
-    const storageRef = ref(storage, name);
-
-    const uploadTask = uploadBytesResumable(storageRef, file);
-
-    return new Promise((resolve, reject) => {
-      uploadTask.on(
-        "state_changed",
-        (snapshot) => {
-          console.log("Uploading");
-        },
-        (error) => {
-          reject(error);
-        },
-        () => {
-          getDownloadURL(uploadTask.snapshot.ref)
-            .then((downloadURL) => {
-              uploadedFileURLs.push(downloadURL);
-              resolve();
-            })
-            .catch((error) => {
-              reject(error);
-            });
-        }
-      );
+    selectedFiles.forEach((file) => {
+      if (!validateFileSize(file)) {
+        errors.push(`${file.name} is too large (max 5MB)`);
+      } else if (!isImageFile(file)) {
+        errors.push(`${file.name} is not an image file`);
+      } else {
+        validFiles.push(file);
+      }
     });
+
+    // Show errors if any
+    if (errors.length > 0) {
+      errors.forEach((error) => toast.error(error));
+    }
+
+    // Set valid files
+    if (validFiles.length > 0) {
+      setAssets(validFiles);
+      toast.success(`Added ${validFiles.length} image(s)`);
+    }
   };
 
   return (
     <>
       <ModalWrapper open={open} setOpen={setOpen}>
-        <form onSubmit={handleSubmit(submitHandler)}>
+        <form onSubmit={handleSubmit(handleOnSubmit)}>
           <Dialog.Title
             as="h2"
             className="text-base font-bold leading-6 text-gray-900 mb-4"
@@ -127,27 +156,34 @@ const AddTask = ({ open, setOpen, task }) => {
             {task ? "UPDATE TASK" : "ADD TASK"}
           </Dialog.Title>
 
-          <div className="mt-1 flex-col gap-6 py-2">
+          <div className="mt-2 flex flex-col gap-6">
             <Textbox
-              placeholder="Task Title"
+              placeholder="Task title"
               type="text"
               name="title"
               label="Task Title"
               className="w-full rounded"
-              register={register("title", { required: "Title is required" })}
+              register={register("title", {
+                required: "Title is required!",
+              })}
               error={errors.title ? errors.title.message : ""}
             />
-
             <UserList setTeam={setTeam} team={team} />
-
-            <div className="flex gap-4 pt-5">
+            <div className="flex gap-4">
               <SelectList
                 label="Task Stage"
                 lists={LISTS}
                 selected={stage}
                 setSelected={setStage}
               />
-
+              <SelectList
+                label="Priority Level"
+                lists={PRIORITY}
+                selected={priority}
+                setSelected={setPriority}
+              />
+            </div>
+            <div className="flex gap-4">
               <div className="w-full">
                 <Textbox
                   placeholder="Date"
@@ -161,16 +197,6 @@ const AddTask = ({ open, setOpen, task }) => {
                   error={errors.date ? errors.date.message : ""}
                 />
               </div>
-            </div>
-
-            <div className="flex gap-4 pt-3">
-              <SelectList
-                label="Priority Level"
-                lists={PRIORITY}
-                selected={priority}
-                setSelected={setPriority}
-              />
-
               <div className="w-full flex items-center justify-center mt-4">
                 <label
                   className="flex items-center gap-1 text-base text-ascent-2 hover:text-ascent-1 cursor-pointer my-4"
@@ -181,27 +207,56 @@ const AddTask = ({ open, setOpen, task }) => {
                     className="hidden"
                     id="imgUpload"
                     onChange={(e) => handleSelect(e)}
-                    accept=".jpg, .png, .jpeg"
+                    accept="image/*"
                     multiple={true}
                   />
                   <BiImages />
-                  <span>Add Assets</span>
+                  <span>Add Images</span>
                 </label>
               </div>
             </div>
 
-            <div className="bg-gray-50 py-6 sm:flex sm:flex-row-reverse gap-4">
-              {uploading ? (
-                <span className="text-sm py-2 text-red-500">
-                  Uploading assets
+            {/* <div className='w-full'>
+              <p>Task Description</p>
+              <textarea
+                name='description'
+                {...register("description")}
+                className='w-full bg-transparent px-3 py-1.5 2xl:py-3 border border-gray-300
+            dark:border-gray-600 placeholder-gray-300 dark:placeholder-gray-700
+            text-gray-900 dark:text-white outline-none text-base focus:ring-2
+            ring-blue-300'
+              ></textarea>
+            </div> */}
+
+            {/* <div className='w-full'>
+              <p>
+                Add Links{" "}
+                <span className='text- text-gray-600'>
+                  seperated by comma (,)
                 </span>
-              ) : (
-                <Button
-                  label="Submit"
-                  type="submit"
-                  className="bg-gradient-to-r from-teal-700 via-blue-600 to-sky-400 px-8 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto"
-                />
-              )}
+              </p>
+              <textarea
+                name='links'
+                {...register("links")}
+                className='w-full bg-transparent px-3 py-1.5 2xl:py-3 border border-gray-300
+            dark:border-gray-600 placeholder-gray-300 dark:placeholder-gray-700
+            text-gray-900 dark:text-white outline-none text-base focus:ring-2
+            ring-blue-300'
+              ></textarea>
+            </div> */}
+          </div>
+
+          {isLoading || isUpdating || uploading ? (
+            <div className="py-4">
+              <Loading />
+            </div>
+          ) : (
+            <div className="bg-gray-50 mt-6 mb-4 sm:flex sm:flex-row-reverse gap-4">
+              <Button
+                label="Submit"
+                type="submit"
+                className="bg-gradient-to-r from-teal-700 via-blue-600 to-sky-400 px-8 text-sm font-semibold text-white hover:bg-blue-700 sm:w-auto"
+              />
 
               <Button
                 type="button"
@@ -210,7 +265,7 @@ const AddTask = ({ open, setOpen, task }) => {
                 label="Cancel"
               />
             </div>
-          </div>
+          )}
         </form>
       </ModalWrapper>
     </>

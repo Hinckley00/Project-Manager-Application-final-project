@@ -31,7 +31,9 @@ export function getInitials(fullName) {
 
   const names = fullName.split(" ");
 
-  const initials = names.slice(0, 2).map((name) => name[0]?.toUpperCase() || "");
+  const initials = names
+    .slice(0, 2)
+    .map((name) => name[0]?.toUpperCase() || "");
 
   const initialsStr = initials.join("");
 
@@ -41,6 +43,7 @@ export function getInitials(fullName) {
 export const PRIORITYSTYLES = {
   high: "text-red-600",
   medium: "text-yellow-600",
+  normal: "text-gray-600",
   low: "text-blue-600",
 };
 
@@ -50,4 +53,9 @@ export const TASK_TYPE = {
   completed: "bg-green-600",
 };
 
-export const BGS = ["bg-blue-600", "bg-yellow-600", "bg-red-600", "bg-green-600"];
+export const BGS = [
+  "bg-blue-600",
+  "bg-yellow-600",
+  "bg-red-600",
+  "bg-green-600",
+];

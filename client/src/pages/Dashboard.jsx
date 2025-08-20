@@ -1,22 +1,34 @@
+import clsx from "clsx";
+import moment from "moment";
+import { FaNewspaper } from "react-icons/fa";
+import { FaArrowsToDot } from "react-icons/fa6";
+import { LuClipboardList } from "react-icons/lu";
 import {
   MdAdminPanelSettings,
   MdKeyboardArrowDown,
   MdKeyboardArrowUp,
   MdKeyboardDoubleArrowUp,
 } from "react-icons/md";
-import { LuClipboardList } from "react-icons/lu";
-import { FaNewspaper, FaUsers } from "react-icons/fa";
-import { FaArrowsToDot } from "react-icons/fa6";
-import moment from "moment";
-import { summary } from "../assets/data";
-import clsx from "clsx";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Chart from "../components/Chart";
-import { BGS, PRIORITYSTYLES, TASK_TYPE, getInitials } from "../utils";
+import Loading from "../components/Loader";
 import UserInfo from "../components/UserInfo";
 import { useGetDashboardStatsQuery } from "../redux/slices/api/taskApiSlice";
-import Loading from "../components/Loader"
+import { BGS, PRIORITYSTYLES, TASK_TYPE, getInitials } from "../utils";
 
 const TaskTable = ({ tasks }) => {
+  // Safety check for tasks
+  if (!tasks || !Array.isArray(tasks) || tasks.length === 0) {
+    return (
+      <div className="w-full bg-white px-4 md:px-6 pt-4 pb-6 shadow-lg rounded">
+        <div className="text-center py-8 text-gray-500">
+          No recent tasks available
+        </div>
+      </div>
+    );
+  }
+
   const ICONS = {
     high: <MdKeyboardDoubleArrowUp />,
     medium: <MdKeyboardArrowUp />,
@@ -59,18 +71,38 @@ const TaskTable = ({ tasks }) => {
 
       <td className="py-2 px-4">
         <div className="flex">
-          {task.team.map((m, index) => (
-            <div
-              key={index}
-              className={clsx(
-                "w-8 h-8 rounded-full text-white flex items-center justify-center text-sm -mr-1",
-                BGS[index % BGS.length]
-              )}
-            >
-              <UserInfo user={m} />
-              {/* {getInitials(m?.name)} */}
-            </div>
-          ))}
+          {(() => {
+            console.log('Task team data:', task.team, 'Type:', typeof task.team);
+            if (task.team && Array.isArray(task.team) && task.team.length > 0) {
+              return task.team.map((m, index) => (
+                <div
+                  key={index}
+                  className={clsx(
+                    "w-8 h-8 rounded-full text-white flex items-center justify-center text-sm -mr-1",
+                    BGS[index % BGS.length]
+                  )}
+                >
+                  <UserInfo user={m} />
+                  {/* {getInitials(m?.name)} */}
+                </div>
+              ));
+            } else if (task.team && typeof task.team === 'object' && Object.keys(task.team).length > 0) {
+              // Handle case where team might be an object instead of array
+              return Object.values(task.team).map((m, index) => (
+                <div
+                  key={index}
+                  className={clsx(
+                    "w-8 h-8 rounded-full text-white flex items-center justify-center text-sm -mr-1",
+                    BGS[index % BGS.length]
+                  )}
+                >
+                  <UserInfo user={m} />
+                </div>
+              ));
+            } else {
+              return <span className="text-gray-500 text-sm">No team assigned</span>;
+            }
+          })()}
         </div>
       </td>
       <td className="py-2 px-4 hidden md:block whitespace-nowrap">
@@ -97,6 +129,17 @@ const TaskTable = ({ tasks }) => {
 };
 
 const UserTable = ({ users }) => {
+  // Safety check for users
+  if (!users || !Array.isArray(users) || users.length === 0) {
+    return (
+      <div className="w-full overflow-x-auto bg-white px-4 py-4 shadow-lg rounded-lg">
+        <div className="text-center py-8 text-gray-500">
+          No users available
+        </div>
+      </div>
+    );
+  }
+
   const TableHeader = () => (
     <thead className="border-b border-gray-200">
       <tr className="text-gray-700 text-left text-sm">
@@ -157,7 +200,39 @@ const UserTable = ({ users }) => {
 };
 
 const Dashboard = () => {
-  const { data, isLoading } = useGetDashboardStatsQuery();
+  const navigate = useNavigate();
+  const { data, isLoading, error } = useGetDashboardStatsQuery();
+
+  // Check authentication on component mount
+  useEffect(() => {
+    const userInfo = localStorage.getItem("userInfo");
+    console.log("Dashboard: Checking authentication, userInfo:", userInfo);
+    
+    if (!userInfo) {
+      console.log("Dashboard: No userInfo found, redirecting to login");
+      navigate("/login");
+      return;
+    }
+    
+    try {
+      const user = JSON.parse(userInfo);
+      console.log("Dashboard: Parsed user:", user);
+      if (!user) {
+        console.log("Dashboard: Invalid user data, redirecting to login");
+        navigate("/login");
+        return;
+      }
+    } catch (error) {
+      console.error("Dashboard: Failed to parse user info:", error);
+      navigate("/login");
+      return;
+    }
+  }, [navigate]);
+
+  // Debug logging
+  console.log('Dashboard API Response:', { data, isLoading, error });
+  console.log('Dashboard: Available cookies:', document.cookie);
+  console.log('Dashboard: localStorage userInfo:', localStorage.getItem("userInfo"));
 
   if (isLoading) {
     return(
@@ -166,7 +241,47 @@ const Dashboard = () => {
       </div>
     )
   }
-  const totals = data?.tasks;
+
+  if (error) {
+    console.error('Dashboard API Error:', error);
+    
+    // If it's an authentication error, redirect to login
+    if (error.status === 401) {
+      localStorage.removeItem("userInfo");
+      navigate("/login");
+      return null;
+    }
+    
+    return (
+      <div className="py-10 text-center">
+        <div className="text-red-600 text-xl font-semibold mb-2">Error Loading Dashboard</div>
+        <div className="text-gray-600">Failed to load dashboard statistics. Please try again later.</div>
+        <div className="text-sm text-gray-500 mt-2">
+          {error?.data?.message || error?.message || 'Unknown error occurred'}
+        </div>
+      </div>
+    );
+  }
+
+  // Ensure data exists and has the expected structure
+  if (!data || !data.status) {
+    console.warn('Dashboard data is missing or invalid:', data);
+    return (
+      <div className="py-10 text-center">
+        <div className="text-gray-600">No dashboard data available.</div>
+        <div className="text-sm text-gray-500 mt-2">
+          Data structure: {JSON.stringify(data, null, 2)}
+        </div>
+      </div>
+    );
+  }
+
+  const totals = data?.tasks || {};
+  const last10Task = data?.last10Task || [];
+  const users = data?.users || [];
+  const graphData = data?.graphData || [];
+
+  console.log('Dashboard processed data:', { totals, last10Task, users, graphData });
 
   const stats = [
     {
@@ -193,9 +308,9 @@ const Dashboard = () => {
     {
       _id: "4",
       label: "TODOS",
-      total: totals["todo"],
+      total: totals["todo"] || 0,
       icon: <FaArrowsToDot />,
-      bg: "bg-[#be185d]" || 0,
+      bg: "bg-[#be185d]",
     },
   ];
 
@@ -233,17 +348,24 @@ const Dashboard = () => {
         <h4 className="text-xl text-gray-600 font-semibold">
           Chart by Priority
         </h4>
-        <Chart data = {data?.graphData} />
+        <br />
+        {graphData && graphData.length > 0 ? (
+          <Chart data={graphData} />
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            No chart data available
+          </div>
+        )}
       </div>
       <div className="w-full flex flex-col lg:flex-row gap-4 2xl:gap-10 py-8">
         {/* {Left} */}
         <div className="flex-1">
-          <TaskTable tasks={data.last10Task} />
+          <TaskTable tasks={last10Task} />
         </div>
 
         {/* {Right} */}
         <div className="w-full lg:w-1/3 font-semibold">
-          <UserTable users={data.users} />
+          <UserTable users={users} />
         </div>
       </div>
     </div>

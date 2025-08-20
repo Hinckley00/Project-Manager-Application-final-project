@@ -1,12 +1,26 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-// const API_URI = "https://localhost:8800/api";
-const API_URI = import.meta.env.VITE_APP_BASE_URL;
+// Use the Vite proxy for development
+const baseQuery = fetchBaseQuery({ 
+  baseUrl: "/api",
+  credentials: "include",
+});
 
-const baseQuery = fetchBaseQuery({ baseUrl: API_URI + "/api" });
+// Custom base query with error handling
+const baseQueryWithReauth = async (args, api, extraOptions) => {
+  let result = await baseQuery(args, api, extraOptions);
+  
+  if (result.error && result.error.status === 401) {
+    // Unauthorized - clear user data and redirect to login
+    localStorage.removeItem("userInfo");
+    window.location.href = "/login";
+  }
+  
+  return result;
+};
 
 export const apiSlice = createApi({
-  baseQuery,
+  baseQuery: baseQueryWithReauth,
   tagTypes: [],
   endpoints: (builder) => ({}),
 });

@@ -17,10 +17,11 @@ import ConfirmationDialog from "../Dialogs.jsx";
 const ICONS = {
   high: <MdKeyboardDoubleArrowUp />,
   medium: <MdKeyboardArrowUp />,
+  normal: <MdKeyboardArrowUp />,
   low: <MdKeyboardArrowDown />,
 };
 
-const Table = ({ tasks }) => {
+const Table = ({ tasks = [] }) => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selected, setSelected] = useState(null);
 
@@ -67,15 +68,15 @@ const Table = ({ tasks }) => {
         <div className="flex items-center gap-3">
           <div className="flex gap-1 items-center text-sm text-gray-600">
             <BiMessageAltDetail />
-            <span>{task?.activities?.length}</span>
+            <span>{task?.activities?.length || 0}</span>
           </div>
           <div className="flex gap-1 items-center text-sm text-gray-600 dark:text-gray-400">
             <MdAttachFile />
-            <span>{task?.assets?.length}</span>
+            <span>{task?.assets?.length || 0}</span>
           </div>
           <div className="flex gap-1 items-center text-sm text-gray-600 dark:text-gray-400">
             <FaList />
-            <span>0/{task?.subTasks?.length}</span>
+            <span>0/{task?.subTasks?.length || 0}</span>
           </div>
         </div>
       </td>
@@ -121,7 +122,7 @@ const Table = ({ tasks }) => {
             <table className="w-full ">
               <TableHeader />
               <tbody>
-                {tasks.map((task, index) => (
+                {tasks?.map((task, index) => (
                   <TableRow key={index} task={task} />
                 ))}
               </tbody>

@@ -1,16 +1,16 @@
-import Task from "../models/task.js";
+import Task from "../models/taskModel.js";
 import Notice from "../models/notification.js";
-import User from "../models/user.js";
+import User from "../models/userModel.js";
 
 export const createTask = async (req, res) => {
   try {
     const { userId } = req.user;
 
-    const { title, team, stage, date, priority, assets } = req.body;
+    const { title, team, stage, date, priority, assets, description, links } = req.body;
 
     let text = "New task has been assigned to you";
     if (team?.length > 1) {
-      text = text + ` and ${task.team.length - 1} others.`;
+      text = text + ` and ${team?.length - 1} others.`;
     }
 
     text =
@@ -31,8 +31,10 @@ export const createTask = async (req, res) => {
       stage: stage.toLowerCase(),
       date,
       priority: priority.toLowerCase(),
-      assets,
-      activities: activity,
+      assets: assets || [],
+      description: description || "",
+      links: links ? links.split(',').map(link => link.trim()) : [],
+      activities: [activity],
     });
 
     await Notice.create({
@@ -278,22 +280,24 @@ export const createSubTask = async (req, res) => {
 export const updateTask = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, date, team, stage, priority, assets } = req.body;
+    const { title, date, team, stage, priority, assets, description, links } = req.body;
 
     const task = await Task.findById(id);
 
     task.title = title;
     task.date = date;
     task.priority = priority.toLowerCase();
-    task.assets = assets;
+    task.assets = assets || [];
     task.stage = stage.toLowerCase();
     task.team = team;
+    task.description = description || "";
+    task.links = links ? links.split(',').map(link => link.trim()) : [];
 
     await task.save();
 
     res
       .status(200)
-      .json({ status: true, message: "Task duplicated successfully." });
+      .json({ status: true, message: "Task updated successfully." });
   } catch (error) {
     console.log(error);
     return res.status(400).json({ status: false, message: error.message });

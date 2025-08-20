@@ -1,5 +1,5 @@
 import { createJWT } from "../utils/index.js";
-import User from "../models/user.js";
+import User from "../models/userModel.js";
 import Notice from "../models/notification.js";
 
 // server/controllers/userController.js

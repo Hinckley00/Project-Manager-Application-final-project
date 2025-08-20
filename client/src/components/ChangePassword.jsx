@@ -77,7 +77,7 @@ const ChangePassword = ({ open, setOpen }) => {
             <div className="py-3 mt-4 sm:flex sm:flex-row-reverse">
               <Button
                 type="submit"
-                className="bg-blue-600 px-8 text-sm font-semibold text-white hover:bg-blue-700  sm:w-auto"
+                className=" bg-gradient-to-r from-teal-700 via-blue-600 to-sky-400 px-8 text-sm font-semibold text-white hover:bg-blue-700  sm:w-auto"
                 label="Save"
               />
 
