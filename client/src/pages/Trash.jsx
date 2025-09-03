@@ -13,6 +13,12 @@ import Button from "../components/Button";
 import { PRIORITYSTYLES, TASK_TYPE } from "../utils";
 // import AddUser from "../components/AddUser";
 import ConfirmationDialog from "../components/Dialogs";
+import {
+  useDeleteRestoreTaskMutation,
+  useGetAllTaskQuery,
+} from "../redux/slices/api/taskApiSlice";
+import Loading from "../components/Loader";
+import {toast} from "sonner";
 
 const ICONS = {
   high: <MdKeyboardDoubleArrowUp />,
@@ -26,6 +32,57 @@ const Trash = () => {
   const [msg, setMsg] = useState(null);
   const [type, setType] = useState("delete");
   const [selected, setSelected] = useState("");
+
+  const { data, isLoading, refetch } = useGetAllTaskQuery({
+    strQuery: "",
+    isTrashed: "true",
+    search: "",
+  });
+
+  const [deleteRestoreTask] = useDeleteRestoreTaskMutation();
+
+  const deleteRestoreHandler = async () => {
+    try {
+      let result;
+
+      switch (type) {
+        case "delete":
+          result = await deleteRestoreTask({
+            id: selected,
+            actionType: "delete",
+          }).unwrap();
+          break;
+        case "deleteAll":
+          result = await deleteRestoreTask({
+            id: selected,
+            actionType: "deleteAll",
+          }).unwrap();
+          break;
+        case "restore":
+          result = await deleteRestoreTask({
+            id: selected,
+            actionType: "restore",
+          }).unwrap();
+          break;
+        case "restoreAll":
+          result = await deleteRestoreTask({
+            id: selected,
+            actionType: "restoreAll",
+          }).unwrap();
+          break;
+      }
+
+      toast.success(result?.message);
+
+      setTimeout(() => {
+        setOpenDialog(false);
+        refetch();
+      }, 500);
+    } catch (err) {
+      console.log(err);
+      toast.error(err?.data?.message || err.error);
+    }
+  };
 
   const deleteAllClick = () => {
     setType("deleteAll");
@@ -52,6 +109,14 @@ const Trash = () => {
     setOpenDialog(true);
   };
 
+  if (isLoading) {
+    return (
+      <div className="py-10">
+        <Loading />
+      </div>
+    );
+  }
+
   const TableHeader = () => (
     <thead className="border-b border-gray-300">
       <tr className="text-black  text-left">
@@ -67,19 +132,27 @@ const Trash = () => {
     <tr className="border-b border-gray-200 text-gray-600 hover:bg-gray-400/10">
       <td className="py-2">
         <div className="flex items-center gap-2">
-          <div className={clsx("w-4 h-4 rounded-full", TASK_TYPE[item.stage])} />
-          <p className="w-full line-clamp-2 text-base text-black">{item?.title}</p>
+          <div
+            className={clsx("w-4 h-4 rounded-full", TASK_TYPE[item.stage])}
+          />
+          <p className="w-full line-clamp-2 text-base text-black">
+            {item?.title}
+          </p>
         </div>
       </td>
 
       <td className="py-2 capitalize">
         <div className={"flex gap-1 items-center"}>
-          <span className={clsx("text-lg", PRIORITYSTYLES[item?.priority])}>{ICONS[item?.priority]}</span>
+          <span className={clsx("text-lg", PRIORITYSTYLES[item?.priority])}>
+            {ICONS[item?.priority]}
+          </span>
           <span className="">{item?.priority}</span>
         </div>
       </td>
 
-      <td className="py-2 capitalize text-center md:text-start">{item?.stage}</td>
+      <td className="py-2 capitalize text-center md:text-start">
+        {item?.stage}
+      </td>
       <td className="py-2 text-sm">{new Date(item?.date).toDateString()}</td>
 
       <td className="py-2 flex gap-1 justify-end">
@@ -87,7 +160,10 @@ const Trash = () => {
           icon={<MdOutlineRestore className="text-xl text-gray-500" />}
           onClick={() => restoreClick(item._id)}
         />
-        <Button icon={<MdDelete className="text-xl text-red-600" />} onClick={() => deleteClick(item._id)} />
+        <Button
+          icon={<MdDelete className="text-xl text-red-600" />}
+          onClick={() => deleteClick(item._id)}
+        />
       </td>
     </tr>
   );
@@ -114,12 +190,15 @@ const Trash = () => {
           </div>
         </div>
         <div className="relative">
-          <div className="bg-white px-2 md:px-6 py-4 shadow-md rounded-lg" style={{ marginTop: "30px" }}>
+          <div
+            className="bg-white px-2 md:px-6 py-4 shadow-md rounded-lg"
+            style={{ marginTop: "30px" }}
+          >
             <div className="overflow-x-auto">
               <table className="w-full mb-5">
                 <TableHeader />
                 <tbody>
-                  {tasks?.map((tk, id) => (
+                  {data?.tasks?.map((tk, id) => (
                     <TableRow key={id} item={tk} />
                   ))}
                 </tbody>

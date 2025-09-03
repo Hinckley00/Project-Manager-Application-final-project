@@ -71,38 +71,19 @@ const TaskTable = ({ tasks }) => {
 
       <td className="py-2 px-4">
         <div className="flex">
-          {(() => {
-            console.log('Task team data:', task.team, 'Type:', typeof task.team);
-            if (task.team && Array.isArray(task.team) && task.team.length > 0) {
-              return task.team.map((m, index) => (
+          {Array.isArray(task.team) && task.team.length > 0
+            ? task.team.map((m, index) => (
                 <div
                   key={index}
                   className={clsx(
-                    "w-8 h-8 rounded-full text-white flex items-center justify-center text-sm -mr-1",
+                    "w-8 h-8 rounded-full text-white flex items-center justify-center text-sm -mr-1 font-semibold",
                     BGS[index % BGS.length]
                   )}
                 >
-                  <UserInfo user={m} />
-                  {/* {getInitials(m?.name)} */}
+                  {getInitials(m?.name)}
                 </div>
-              ));
-            } else if (task.team && typeof task.team === 'object' && Object.keys(task.team).length > 0) {
-              // Handle case where team might be an object instead of array
-              return Object.values(task.team).map((m, index) => (
-                <div
-                  key={index}
-                  className={clsx(
-                    "w-8 h-8 rounded-full text-white flex items-center justify-center text-sm -mr-1",
-                    BGS[index % BGS.length]
-                  )}
-                >
-                  <UserInfo user={m} />
-                </div>
-              ));
-            } else {
-              return <span className="text-gray-500 text-sm">No team assigned</span>;
-            }
-          })()}
+              ))
+            : null}
         </div>
       </td>
       <td className="py-2 px-4 hidden md:block whitespace-nowrap">

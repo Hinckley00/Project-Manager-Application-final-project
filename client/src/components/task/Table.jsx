@@ -9,10 +9,17 @@ import {
 } from "react-icons/md";
 import { FaList } from "react-icons/fa";
 import { toast } from "sonner";
-import { BGS, formatDate, PRIORITYSTYLES, TASK_TYPE } from "../../utils";
-import UserInfo from "../UserInfo.jsx";
+import {
+  BGS,
+  formatDate,
+  PRIORITYSTYLES,
+  TASK_TYPE,
+  getInitials,
+} from "../../utils";
 import Button from "../Button.jsx";
 import ConfirmationDialog from "../Dialogs.jsx";
+import { useTrashTaskMutation } from "../../redux/slices/api/taskApiSlice.js";
+import AddTask from "./AddTask.jsx";
 
 const ICONS = {
   high: <MdKeyboardDoubleArrowUp />,
@@ -24,13 +31,37 @@ const ICONS = {
 const Table = ({ tasks = [] }) => {
   const [openDialog, setOpenDialog] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [openEdit, setOpenEdit] = useState(false);
+
+  const [trashTask] = useTrashTaskMutation();
 
   const deleteClicks = (id) => {
     setSelected(id);
     setOpenDialog(true);
   };
 
-  const deleteHandler = () => {};
+  const editTaskHandler = (el) => {
+    setSelected(el);
+    setOpenEdit(true);
+  };
+
+  const deleteHandler = async () => {
+    try {
+      const result = await trashTask({
+        id: selected,
+        isTrash: "trash",
+      }).unwrap();
+      toast.success(result?.message);
+
+      setTimeout(() => {
+        setOpenDialog(false);
+        window.location.reload();
+      }, 500);
+    } catch (error) {
+      console.log(err);
+      toast.error(err?.data?.message || err.error);
+    }
+  };
 
   const TableHeader = () => (
     <thead className="w-full border-b border-gray-300">
@@ -48,20 +79,30 @@ const Table = ({ tasks = [] }) => {
     <tr className="border-b border-gray-200 text-gray-600 hover:bg-gray-300/10">
       <td className="py-2">
         <div className="flex items-center gap-2">
-          <div className={clsx("w-4 h-4 rounded-full", TASK_TYPE[task.stage])} />
-          <p className="w-full line-clamp-2 text-base text-black">{task?.title}</p>
+          <div
+            className={clsx("w-4 h-4 rounded-full", TASK_TYPE[task.stage])}
+          />
+          <p className="w-full line-clamp-2 text-base text-black">
+            {task?.title}
+          </p>
         </div>
       </td>
 
       <td className="py-2">
         <div className={"flex gap-1 items-center"}>
-          <span className={clsx("text-lg", PRIORITYSTYLES[task?.priority])}>{ICONS[task?.priority]}</span>
-          <span className="capitalize line-clamp-1">{task?.priority} Priority</span>
+          <span className={clsx("text-lg", PRIORITYSTYLES[task?.priority])}>
+            {ICONS[task?.priority]}
+          </span>
+          <span className="capitalize line-clamp-1">
+            {task?.priority} Priority
+          </span>
         </div>
       </td>
 
       <td className="py-2">
-        <span className="text-sm text-gray-600">{formatDate(new Date(task?.date))}</span>
+        <span className="text-sm text-gray-600">
+          {formatDate(new Date(task?.date))}
+        </span>
       </td>
 
       <td className="py-2">
@@ -91,7 +132,7 @@ const Table = ({ tasks = [] }) => {
                 BGS[index % BGS?.length]
               )}
             >
-              <UserInfo user={m} />
+              <span className="font-semibold">{getInitials(m?.name)}</span>
             </div>
           ))}
         </div>
@@ -102,6 +143,7 @@ const Table = ({ tasks = [] }) => {
           className="text-blue-600 hover:text-blue-500 sm:px-0 text-sm md:text-base"
           label="Edit"
           type="button"
+          onClick={() => editTaskHandler(task)}
         />
 
         <Button
@@ -117,7 +159,10 @@ const Table = ({ tasks = [] }) => {
   return (
     <>
       <div className="relative">
-        <div className="bg-white px-2 md:px-4 pt-4 pb-9 shadow-md rounded-lg" style={{ marginTop: "20px" }}>
+        <div
+          className="bg-white px-2 md:px-4 pt-4 pb-9 shadow-md rounded-lg"
+          style={{ marginTop: "20px" }}
+        >
           <div className="overflow-x-auto">
             <table className="w-full ">
               <TableHeader />
@@ -132,7 +177,18 @@ const Table = ({ tasks = [] }) => {
       </div>
 
       {/* {ToDo} */}
-      <ConfirmationDialog open={openDialog} setOpen={setOpenDialog} onClick={deleteHandler} />
+      <ConfirmationDialog
+        open={openDialog}
+        setOpen={setOpenDialog}
+        onClick={deleteHandler}
+      />
+
+      <AddTask
+        open={openEdit}
+        setOpen={setOpenEdit}
+        task={selected}
+        key={new Date().getTime()}
+      />
     </>
   );
 };

@@ -107,7 +107,7 @@ io.on("connection", (socket) => {
 // Routes
 app.use("/api", routes);
 
-const PORT = process.env.PORT || 8800;
+const PORT = process.env.PORT || 8801;
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

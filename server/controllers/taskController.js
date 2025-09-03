@@ -10,12 +10,12 @@ export const createTask = async (req, res) => {
 
     let text = "New task has been assigned to you";
     if (team?.length > 1) {
-      text = text + ` and ${team?.length - 1} others.`;
+      text = text + ` and ${team?.length - 1} other(s).`;
     }
 
     text =
       text +
-      ` The task priority is set a ${priority} priority, so check and act accordingly. The task date is ${new Date(
+      ` The task priority is set to ${priority} priority, so check and act accordingly. The task date is ${new Date(
         date
       ).toDateString()}. Thank you!! ☺️`;
 
@@ -37,11 +37,13 @@ export const createTask = async (req, res) => {
       activities: [activity],
     });
 
-    await Notice.create({
+    const notification = await Notice.create({
       team,
       text,
       task: task._id,
     });
+    
+    console.log("Notification created:", notification);
 
     res
       .status(200)
@@ -83,11 +85,13 @@ export const duplicateTask = async (req, res) => {
         task.priority
       } priority, so check and act accordingly. The task date is ${task.date.toDateString()}. Thank you!! ☺️`;
 
-    await Notice.create({
+    const notification = await Notice.create({
       team: task.team,
       text,
       task: newTask._id,
     });
+    
+    console.log("Duplicate task notification created:", notification);
 
     res
       .status(200)
@@ -256,21 +260,24 @@ export const createSubTask = async (req, res) => {
     const { title, tag, date } = req.body;
     const { id } = req.params;
 
+    const task = await Task.findById(id);
+    
+    if (!task) {
+      return res.status(404).json({ status: false, message: "Task not found" });
+    }
+
     const newSubTask = {
       title,
       date,
       tag,
     };
 
-    const task = await Task.findById(id);
-
     task.subTasks.push(newSubTask);
-
     await task.save();
 
     res
       .status(200)
-      .json({ status: true, message: "SubTask added succesfully." });
+      .json({ status: true, message: "SubTask added successfully." });
   } catch (error) {
     console.log(error);
     return res.status(400).json({ status: false, message: error.message });

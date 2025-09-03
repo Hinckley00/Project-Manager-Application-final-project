@@ -24,7 +24,7 @@ router.post("/activity/:id", protectRoute, postTaskActivity);
 router.get("/dashboard", protectRoute, dashboardStatistics);
 
 // ----- Subtask + updates -----
-router.post("/create-subtask/:id", protectRoute, isAdminRoute, createSubTask);
+router.put("/create-subtask/:id", protectRoute, isAdminRoute, createSubTask);
 router.put("/update/:id", protectRoute, isAdminRoute, updateTask);
 
 // ----- Trash specific -----

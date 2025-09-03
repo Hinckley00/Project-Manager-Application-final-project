@@ -8,10 +8,15 @@ import {
 } from "react-icons/md";
 import { BiMessageAltDetail } from "react-icons/bi";
 import { useSelector } from "react-redux";
-import { BGS, formatDate, PRIORITYSTYLES, TASK_TYPE } from "../utils";
+import {
+  BGS,
+  formatDate,
+  PRIORITYSTYLES,
+  TASK_TYPE,
+  getInitials,
+} from "../utils";
 import TaskDialog from "./task/TaskDialog";
 import { FaList } from "react-icons/fa";
-import UserInfo from "./UserInfo";
 import { IoMdAdd } from "react-icons/io";
 import AddSubTask from "./task/AddSubTask";
 
@@ -42,10 +47,14 @@ const TaskCard = ({ task }) => {
         </div>
         <>
           <div className="flex items-center gap-2">
-            <div className={clsx("w-4 h-4 rounded-full", TASK_TYPE[task.stage])} />
+            <div
+              className={clsx("w-4 h-4 rounded-full", TASK_TYPE[task.stage])}
+            />
             <h4 className="line-clamp-1 text-black">{task?.title}</h4>
           </div>
-          <span className="text-sm text-gray-600">{formatDate(new Date(task?.date))}</span>
+          <span className="text-sm text-gray-600">
+            {formatDate(new Date(task?.date))}
+          </span>
         </>
         <div className="w-full border-t border-gray-200 my-2 py-1" />
         <div className="flex items-center justify-between mb-3">
@@ -72,7 +81,7 @@ const TaskCard = ({ task }) => {
                   BGS[index % BGS?.length]
                 )}
               >
-                <UserInfo user={m} />
+                <span className="font-semibold">{getInitials(m?.name)}</span>
               </div>
             ))}
           </div>
@@ -80,9 +89,13 @@ const TaskCard = ({ task }) => {
         {/* {Sub tasks} */}
         {task?.subTasks?.length > 0 ? (
           <div className="py-4 border-t border-gray-200">
-            <h5 className="text-base line-clamp-1 text-black">{task?.subTasks[0].title}</h5>
+            <h5 className="text-base line-clamp-1 text-black">
+              {task?.subTasks[0].title}
+            </h5>
             <div className="p-4 space-x-8">
-              <span className="text-sm text-gray-600">{formatDate(new Date(task?.subTasks[0]?.date))}</span>
+              <span className="text-sm text-gray-600">
+                {formatDate(new Date(task?.subTasks[0]?.date))}
+              </span>
               <span className="bg-blue-600/10 px-3 py-1 rounded-full text-blue-700 font-medium">
                 {task?.subTasks[0].tag}
               </span>
@@ -95,19 +108,22 @@ const TaskCard = ({ task }) => {
             </div>
           </>
         )}
-        
+
         {/* {Assets} */}
-        {task?.assets?.length > 0 && (
+        {/* {task?.assets?.length > 0 && (
           <div className="py-4 border-t border-gray-200">
             <h5 className="text-base text-black mb-2">Attachments</h5>
             <div className="space-y-2">
               {task.assets.map((asset, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                <div
+                  key={index}
+                  className="flex items-center gap-2 p-2 bg-gray-50 rounded"
+                >
                   <MdAttachFile className="text-gray-600" />
                   <span className="text-sm text-gray-700">{asset.name}</span>
                   <button
                     onClick={() => {
-                      const link = document.createElement('a');
+                      const link = document.createElement("a");
                       link.href = asset.link;
                       link.download = asset.name;
                       link.click();
@@ -120,10 +136,10 @@ const TaskCard = ({ task }) => {
               ))}
             </div>
           </div>
-        )}
-        
+        )} */}
+
         {/* {Image Assets} */}
-        {task?.assets?.length > 0 && (
+        {/* {task?.assets?.length > 0 && (
           <div className="py-4 border-t border-gray-200">
             <h5 className="text-base text-black mb-2">Images</h5>
             <div className="grid grid-cols-2 gap-2">
@@ -153,7 +169,7 @@ const TaskCard = ({ task }) => {
                 ))}
             </div>
           </div>
-        )}
+        )} */}
         <div className="w-full pb-2">
           <button
             onClick={() => setOpen(true)}

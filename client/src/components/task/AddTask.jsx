@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { BiImages } from "react-icons/bi";
 import { toast } from "sonner";
-
 import {
   useCreateTaskMutation,
   useUpdateTaskMutation,
@@ -234,7 +233,7 @@ const AddTask = ({ open, setOpen, task }) => {
                 <span className='text- text-gray-600'>
                   seperated by comma (,)
                 </span>
-              </p>
+              </p>        
               <textarea
                 name='links'
                 {...register("links")}

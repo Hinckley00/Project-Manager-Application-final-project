@@ -45,6 +45,7 @@ export const userApiSlice = apiSlice.injectEndpoints({
         method: "GET",
         credentials: "include",
       }),
+      pollingInterval: 30000, // Poll every 30 seconds
     }),
 
     markNotiAsRead: builder.mutation({
